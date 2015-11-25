@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <link rel='stylesheet prefetch' href='css/bootstrap.min.css'>
+    <link rel='stylesheet prefetch' href='css/font-awesome.min.css'>
+
+    <script type="text/javascript" src="js/beep.min.js"></script>
+
+    <script>
+        var stopclock = false;
+
+        var Pomodoro = function(minutes, breakTime){
+            this.minutes = minutes;
+            this.breakTime = breakTime;
+            this.timeElapsed = 0;
+
+            this.getMinutes = function (){
+                return this.minutes;
+            };
+
+            this.getBreakTime = function (){
+                return this.breakTime;
+            };
+
+            this.setMinutes = function (min){
+                this.minutes = min;
+            };
+
+            this.setBreakTime = function (breaktime){
+                this.breakTime = breaktime;
+            };
+
+            this.setTimeElapsed = function (seconds){
+                this.timeElapsed = seconds;
+            };
+
+            this.getTimeElapsed = function (){
+                return this.timeElapsed;
+            };
+        };
+
+        pom = new Pomodoro(25,5);
+
+        function incrementTime(){
+            pom.setMinutes(pom.getMinutes() + 1);
+            drawMinutes();
+        }
+
+        function incrementBreak(){
+            pom.setBreakTime(pom.getBreakTime() + 1);
+            drawBreak();
+        }
+
+        function decTime(){
+            if (pom.getMinutes() > 1) {
+                pom.setMinutes(pom.getMinutes() - 1);
+                drawMinutes();
+            }
+        }
+
+        function decBreak(){
+            if (pom.getBreakTime() > 1) {
+                pom.setBreakTime(pom.getBreakTime() - 1);
+                drawBreak();
+            }
+        }
+
+        function drawMinutes(){
+            document.getElementById("timelabel").innerText = " "+pom.getMinutes()+":00";
+        }
+
+        function drawBreak(){
+            document.getElementById("breaklabel").innerText = " "+pom.getBreakTime()+":00";
+        }
+
+        var initclock = 0;
+        var totalofseconds = 0;
+
+        function initializeClock(isBreak){
+            stopclock = false;
+
+            initclock = new Date();
+
+            if (isBreak){
+                totalofseconds = pom.getBreakTime() * 60;
+            }else{
+                totalofseconds = pom.getMinutes() * 60;
+            }
+
+            startTime(isBreak);
+        }
+
+        function startTime(isBreak){
+
+            if (stopclock){
+                return;
+            }
+
+            var now = new Date();
+            var elapsed = (now.getTime() - initclock.getTime())/1000;
+            pom.setTimeElapsed(Math.floor(elapsed));
+            var percent = Math.floor(elapsed * 100)/totalofseconds;
+
+            if (percent > 100){
+                percent = 100.0;
+            }
+
+            updateProgressBar(percent.toFixed(2),isBreak);
+
+            if (percent >= 100){
+                beep();
+
+                isBreak = !isBreak;
+
+                initializeClock(isBreak);
+                return;
+            }
+
+            setTimeout(function(){ startTime(isBreak); } , 250);
+        }
+
+
+
+        function updateProgressBar(percent,isBreak){
+            var progressbarId = "progress-bar";
+            var progressTextId = "progresstext";
+
+            if (isBreak){
+                progressbarId = "break-progress-bar";
+                progressTextId = "break-progresstext";
+            }
+
+            var progressbar = document.getElementById(progressbarId);
+            progressbar.style.width = percent+"%";
+            progressbar.setAttribute("aria-valuenow",percent);
+            var progresstext = document.getElementById(progressTextId);
+
+            var str = pom.getTimeElapsed()+ " seconds (" +percent+"%)";
+            progresstext.innerText = str;
+        }
+
+        function beep(){
+            new Beep(22050).play(1000, 1, [Beep.utils.amplify(8000)]);
+        }
+
+        function stopClock(){
+            stopclock = true;
+        }
+
+        function resetClock(){
+            initializeClock(false);
+        }
+
+        function redraw(){
+            drawMinutes();
+            drawBreak();
+        }
+
+    </script>
+</head>
+<body onload="redraw()">
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xs-2"></div>
+        <div class="col-xs-2"></div>
+        <div class="col-xs-2">
+            <h2 class="text-center">Time</h2>
+        </div>
+
+        <div class="col-xs-2">
+            <h2 class="text-center">Break</h2>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-xs-2"></div>
+        <div class="col-xs-2"></div>
+        <div class="col-xs-2 text-center">
+            <button type="button" class="btn btn-danger" onclick="decTime()">
+                <i class="glyphicon glyphicon-minus"></i>
+            </button>
+
+            <label class="text-info" id="timelabel"> 1:00 </label>
+
+
+            <button type="button" class="btn btn-success" onclick="incrementTime()">
+                <i class="glyphicon glyphicon-plus"></i>
+            </button>
+        </div>
+
+        <div class="col-xs-2 text-center">
+            <button type="button" class="btn btn-danger" onclick="decBreak()">
+                <i class="glyphicon glyphicon-minus"></i>
+            </button>
+
+            <label class="text-info" id="breaklabel"> 1:00 </label>
+
+            <button type="button" class="btn btn-success" onclick="incrementBreak()">
+                <i class="glyphicon glyphicon-plus"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top: 30px">
+        <div class="col-xs-4"></div>
+
+        <div class="col-xs-4 text-center">
+            <button type="button" class="btn btn-success" onclick="initializeClock()">
+                <i class="fa fa-play"></i>
+            </button>
+
+            <button type="button" class="btn btn-default" onclick="resetClock()">
+                <i class="fa fa-warning"> Reset</i>
+            </button>
+
+            <button type="button" class="btn btn-danger" onclick="stopClock()">
+                <i class="fa fa-stop"></i>
+            </button>
+            </div>
+
+        <div class="col-xs-4"></div>
+    </div>
+
+    <div class="row" style="margin-top: 30px">
+        <div class="col-xs-4"></div>
+
+        <div class="col-xs-4">
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                     aria-valuemax="100" style="width:0%;">
+                    <div id="progresstext" style="color:black"></div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div class="col-xs-4"></div>
+    </div>
+
+    <div class="row" style="margin-top: 30px">
+        <div class="col-xs-4"></div>
+
+        <div class="col-xs-4">
+            <div class="progress">
+                <div id="break-progress-bar" class="progress-bar progress-bar-danger" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                     aria-valuemax="100" style="width:0%;">
+                    <div id="break-progresstext" style="color:black"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="col-xs-4"></div>
+</div>
+
+</div>
+
+</body>
+</html>
